@@ -1,0 +1,6 @@
+__pycache__/
+.ipynb_checkpoints/
+Bike-Sharing-Dataset/
+assets/
+deep-learning-master/
+binary.csv
