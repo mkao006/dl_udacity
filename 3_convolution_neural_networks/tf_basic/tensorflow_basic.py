@@ -125,14 +125,38 @@ with tf.Session() as sess:
         ce, feed_dict={softmax: softmax_data, one_hot: one_hot_data})
     print(output)
 
+# Using relu for a 2 layer network
+output = None
+hidden_layer_weights = [
+    [0.1, 0.2, 0.4],
+    [0.4, 0.6, 0.6],
+    [0.5, 0.9, 0.1],
+    [0.8, 0.2, 0.8]]
+out_weights = [
+    [0.1, 0.6],
+    [0.2, 0.1],
+    [0.7, 0.9]]
 
-from tensorflow.examples.tutorials.mnist import input_data
+# Weights and biases
+weights = [
+    tf.Variable(hidden_layer_weights),
+    tf.Variable(out_weights)]
+biases = [
+    tf.Variable(tf.zeros(3)),
+    tf.Variable(tf.zeros(2))]
 
-n_input = 784  # MNIST data input (img shape: 28*28)
-n_classes = 10  # MNIST total classes (0-9 digits)
+# Input
+features = tf.Variable(
+    [[1.0, 2.0, 3.0, 4.0], [-1.0, -2.0, -3.0, -4.0], [11.0, 12.0, 13.0, 14.0]])
 
-# Import MNIST data
-mnist = input_data.read_data_sets('/datasets/ud730/mnist', one_hot=True)
-# Features and Labels
-features = tf.placeholder(tf.float32, [None, n_input])
-labels = tf.placeholder(tf.float32, [None, n_classes])
+# TODO: Create Model
+h1i = tf.add(tf.matmul(features, weights[0]), biases[0])
+h1o = tf.nn.relu(h1i)
+h2i = tf.add(tf.matmul(h1o, weights[1]), biases[1])
+
+
+# TODO: Print session results
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    output = sess.run(h2i)
+    print(output)
