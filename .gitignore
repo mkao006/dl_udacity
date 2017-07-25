@@ -5,3 +5,7 @@ assets/
 deep-learning-master/
 binary.csv
 venv
+*.p
+*.zip
+*.tar.gz
+cifar-10-batches-py
