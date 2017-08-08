@@ -169,7 +169,7 @@ class WordVectorizer:
             self.saver = tf.train.Saver()
 
     def checkpoint_model(self, sess, path):
-        self.saver(sess, path)
+        self.saver.save(sess, path)
 
 
 vocab_to_int, int_to_vocab, int_words = load_data()
@@ -210,7 +210,7 @@ with tf.Session(graph=vectorizer.graph) as sess:
                 start = time.time()
 
             # Perform quick validation
-            if iteration % 1 == 0:
+            if iteration % 1000 == 0:
                 # note that this is expensive (~20% slowdown if computed every
                 # 500 steps)
                 sim = sess.run(vectorizer.similarity)
@@ -244,3 +244,16 @@ for idx in range(viz_words):
     plt.scatter(*embed_tsne[idx, :], color='steelblue')
     plt.annotate(int_to_vocab[idx],
                  (embed_tsne[idx, 0], embed_tsne[idx, 1]), alpha=0.7)
+
+
+# Re-Define the class as follow:
+#
+# 1. Create the initial variables and graph (__init__)
+#
+# 2. Define a training function (train)
+#
+# 3. Define a saver and loader (save/load)
+#
+# 4. Define a validator (validate)
+#
+# 5. plot (tsne)
