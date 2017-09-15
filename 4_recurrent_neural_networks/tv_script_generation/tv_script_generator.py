@@ -180,10 +180,9 @@ def pick_word(probabilities, int_to_vocab):
     :param int_to_vocab: Dictionary of word ids as the keys and words as the values
     :return: String of the predicted word
     """
+    next_word = np.random.choice(int_to_vocab.values(), p=probabilities)
 
-    max_prob_ind = probabilities.argsort()[-1]
-
-    return int_to_vocab[max_prob_ind]
+    return next_word
 
 
 # Unit tests
