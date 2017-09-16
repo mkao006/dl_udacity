@@ -12,6 +12,11 @@ with open('labels.txt', 'r') as f:
 
 
 def text_preprocessing(text):
+    ''' Function to process the text.
+
+    1. Punctuation are removed.
+    2. sentences are splitted to give tokens.
+    '''
     punctuation_removed = ''.join([t for t in text if t not in punctuation])
     text_list = punctuation_removed.split('\n')
     tokens = ' '.join(text_list).split()
@@ -19,12 +24,20 @@ def text_preprocessing(text):
 
 
 def create_vocab_to_int_dict(tokens):
+    ''' Function to create dictionary to convert token into index.
+    '''
+
     token_set = list(set(tokens))
     conversion_dict = {t: i for i, t in enumerate(token_set)}
     return conversion_dict
 
 
 def sentiment_preprocessing(labels):
+    ''' Function to process labels.
+
+    Text is splitted and then converted to binary labels.
+    '''
+
     splitted_labels = labels.split('\n')
     binary_labels = np.array([1 if each == 'positive' else 0
                               for each in splitted_labels])
@@ -32,6 +45,10 @@ def sentiment_preprocessing(labels):
 
 
 def create_feature_matrix(text_list, max_length=200):
+    ''' Function to convert the list of reviews in to a feature matrix.
+
+    padding and truncation is performed to the specified length.
+    '''
     feature_matrix = np.zeros(
         (len(text_list), max_length), dtype=int)
     for i, l in enumerate(text_list):
@@ -42,6 +59,9 @@ def create_feature_matrix(text_list, max_length=200):
 
 def create_data_partition(feature, labels, train_frac=0.8, test_frac=0.1,
                           verbose=True):
+    ''' Wrapper function to create the train, validation and test data sets.
+    '''
+
     train_x, val_test_x, train_y, val_test_y = (
         train_test_split(features, labels, train_size=train_frac))
 
@@ -58,6 +78,9 @@ def create_data_partition(feature, labels, train_frac=0.8, test_frac=0.1,
 
 
 def get_batches(x, y, batch_size):
+    ''' Function to create generator function to generate batches.
+    '''
+
     n_batches = len(x) // batch_size
     batch_sample = n_batches * batch_size
     batch_x = x[:batch_sample]
@@ -68,6 +91,9 @@ def get_batches(x, y, batch_size):
 
 
 class SentimentRnn:
+    ''' Class to model the sentiments with RNN
+    '''
+
     def __init__(self,
                  vocab_size,
                  lstm_size=256,
@@ -76,6 +102,9 @@ class SentimentRnn:
                  learning_rate=0.001,
                  embed_size=300,
                  epochs=10):
+        ''' Initialise the graph.
+        '''
+
         self.lstm_size = lstm_size
         self.lstm_layers = lstm_layers
         self.batch_size = batch_size
@@ -130,6 +159,8 @@ class SentimentRnn:
             self.accuracy = tf.reduce_mean(input_tensor=correct_pred)
 
     def train(self, train_x, train_y, val_x, val_y):
+        ''' Train the RNN
+        '''
         with self.graph.as_default():
             self.saver = tf.train.Saver()
 
@@ -176,6 +207,8 @@ class SentimentRnn:
             self.saver.save(sess, "checkpoints/sentiment.ckpt")
 
     def test(self, test_x, test_y):
+        ''' Test the RNN with test data.
+        '''
         test_acc = []
         with tf.Session(graph=self.graph) as sess:
             self.saver.restore(sess, tf.train.latest_checkpoint('checkpoints'))
