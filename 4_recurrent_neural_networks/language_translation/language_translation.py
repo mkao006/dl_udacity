@@ -43,31 +43,15 @@ def text_to_ids(source_text, target_text, source_vocab_to_int,
     :return: A tuple of lists (source_id_text, target_id_text)
     """
 
-    # Split the text into list of sentences
-    splitted_source_sentence = [t
-                                for t in source_text.split('\n')]
-    splitted_target_sentence = [t + ' <EOS>'
-                                for t in target_text.split('\n')]
+    source_id_text = [
+        [source_vocab_to_int[word] for word in sentence.split()]
+        for sentence in source_text.split('\n')]
+    target_id_text = [
+        [target_vocab_to_int[word] for word in sentence.split()] +
+        [target_vocab_to_int['<EOS>']]
+        for sentence in target_text.split('\n')]
 
-    num_sentence = len(splitted_source_sentence)
-    splitted_source_id = [None] * num_sentence
-    splitted_target_id = [None] * num_sentence
-    # For each sentence we convert the token into id
-    for i in range(num_sentence):
-        # split the sentence into tokens
-        source_token = splitted_source_sentence[i].split()
-        target_token = splitted_target_sentence[i].split()
-
-        # Convert the token to id bsaed on the dictionary
-        source_sentence_id = [source_vocab_to_int[word]
-                              for word in source_token]
-        target_sentence_id = [target_vocab_to_int[word]
-                              for word in target_token]
-        # Append the list back
-        splitted_source_id[i] = source_sentence_id
-        splitted_target_id[i] = target_sentence_id
-
-    return splitted_source_id, splitted_target_id
+    return source_id_text, target_id_text
 
 
 # Inspect data
