@@ -54,22 +54,6 @@ def text_to_ids(source_text, target_text, source_vocab_to_int,
     return source_id_text, target_id_text
 
 
-# Inspect data
-inspect_data(source_text, target_text, (0, 5))
-
-# Unit tests
-tests.test_text_to_ids(text_to_ids)
-
-# Preprocess all the data and save it
-helper.preprocess_and_save_data(source_path, target_path, text_to_ids)
-
-
-# Check point
-((source_int_text, target_int_text),
- (source_vocab_to_int, target_vocab_to_int),
- _) = helper.load_preprocess()
-
-
 def model_inputs():
     """
     Create TF Placeholders for input, targets, and learning rate.
@@ -81,9 +65,6 @@ def model_inputs():
     keep_prob = tf.placeholder(tf.float32, name='keep_prob')
 
     return input, targets, learning_rate, keep_prob
-
-
-tests.test_model_inputs(model_inputs)
 
 
 def process_decoding_input(target_data, target_vocab_to_int, batch_size):
@@ -106,9 +87,6 @@ def process_decoding_input(target_data, target_vocab_to_int, batch_size):
     return processed_decoding_input
 
 
-tests.test_process_decoding_input(process_decoding_input)
-
-
 def encoding_layer(rnn_inputs, rnn_size, num_layers, keep_prob):
     """
     Create encoding layer
@@ -128,9 +106,6 @@ def encoding_layer(rnn_inputs, rnn_size, num_layers, keep_prob):
                                          inputs=rnn_inputs,
                                          dtype=tf.float32)
     return encoder_state
-
-
-tests.test_encoding_layer(encoding_layer)
 
 
 def decoding_layer_train(encoder_state, dec_cell, dec_embed_input,
@@ -160,9 +135,6 @@ def decoding_layer_train(encoder_state, dec_cell, dec_embed_input,
     logit = output_fn(train_pred)
 
     return logit
-
-
-tests.test_decoding_layer_train(decoding_layer_train)
 
 
 def decoding_layer_infer(encoder_state, dec_cell, dec_embeddings,
@@ -198,9 +170,6 @@ def decoding_layer_infer(encoder_state, dec_cell, dec_embeddings,
         scope=decoding_scope)
 
     return infer_logit
-
-
-tests.test_decoding_layer_infer(decoding_layer_infer)
 
 
 def decoding_layer(dec_embed_input, dec_embeddings, encoder_state, vocab_size,
@@ -261,9 +230,6 @@ def decoding_layer(dec_embed_input, dec_embeddings, encoder_state, vocab_size,
         return train_logit, infer_logit
 
 
-tests.test_decoding_layer(decoding_layer)
-
-
 def seq2seq_model(input_data, target_data, keep_prob, batch_size,
                   sequence_length, source_vocab_size, target_vocab_size,
                   enc_embedding_size, dec_embedding_size, rnn_size, num_layers,
@@ -310,16 +276,6 @@ def seq2seq_model(input_data, target_data, keep_prob, batch_size,
         params=decoder_embeddings_weights,
         ids=decoder_input)
 
-    # print('\ndec_embed_input is {}'.format(decoder_embed_input))
-    # print('dec_embeddings is {}'.format(decoder_embeddings_weights))
-    # print('encoder_state is {}'.format(encoder_state))
-    # print('target_vocab_size is {}'.format(target_vocab_size))
-    # print('sequence_length is {}'.format(sequence_length))
-    # print('rnn_size is {}'.format(rnn_size))
-    # print('num_layers is {}'.format(num_layers))
-    # print('target_vocab_to_int is {}'.format(target_vocab_to_int))
-    # print('keep_prob is {}'.format(keep_prob))
-
     train_logit, infer_logit = decoding_layer(
         dec_embed_input=decoder_embed_input,
         dec_embeddings=decoder_embeddings_weights,
@@ -332,9 +288,6 @@ def seq2seq_model(input_data, target_data, keep_prob, batch_size,
         keep_prob=keep_prob)
 
     return train_logit, infer_logit
-
-
-tests.test_seq2seq_model(seq2seq_model)
 
 
 def get_accuracy(target, logits):
@@ -356,111 +309,114 @@ def get_accuracy(target, logits):
     return np.mean(np.equal(target, np.argmax(logits, 2)))
 
 
-# Number of Epochs
-epochs = 10
-# Batch Size
-batch_size = 128
-# RNN Size
-rnn_size = 256
-# Number of Layers
-num_layers = 3
-# Embedding Size
-encoding_embedding_size = 256
-decoding_embedding_size = 256
-# Learning Rate
-learning_rate = 0.001
-# Dropout Keep Probability
-keep_probability = 0.5
+def train_model(source,
+                target,
+                epochs=10,
+                batch_size=128,
+                rnn_size=256,
+                num_layers=3,
+                encoding_embedding_size=256,
+                decoding_embedding_size=256,
+                learning_rate=0.001,
+                keep_probability=0.5,
+                save_path='checkpoints/dev'):
+    ''' Wrapper to train the model
+    '''
 
-train_source = source_int_text[batch_size:]
-train_target = target_int_text[batch_size:]
+    train_source = source[batch_size:]
+    train_target = target[batch_size:]
 
-valid_source = helper.pad_sentence_batch(source_int_text[:batch_size])
-valid_target = helper.pad_sentence_batch(target_int_text[:batch_size])
+    valid_source = helper.pad_sentence_batch(source[:batch_size])
+    valid_target = helper.pad_sentence_batch(target[:batch_size])
 
+    (source_int_text, target_int_text), (source_vocab_to_int,
+                                         target_vocab_to_int), _ = (
+                                             helper.load_preprocess())
 
-save_path = 'checkpoints/dev'
-(source_int_text, target_int_text), (source_vocab_to_int,
-                                     target_vocab_to_int), _ = (
-                                         helper.load_preprocess())
+    max_source_sentence_length = max([len(sentence)
+                                      for sentence in source_int_text])
 
-max_source_sentence_length = max([len(sentence)
-                                  for sentence in source_int_text])
+    # Build the graphx
+    train_graph = tf.Graph()
+    with train_graph.as_default():
+        input_data, targets, lr, keep_prob = model_inputs()
+        sequence_length = tf.placeholder_with_default(
+            max_source_sentence_length, None, name='sequence_length')
+        input_shape = tf.shape(input_data)
 
-train_graph = tf.Graph()
-with train_graph.as_default():
-    input_data, targets, lr, keep_prob = model_inputs()
-    sequence_length = tf.placeholder_with_default(
-        max_source_sentence_length, None, name='sequence_length')
-    input_shape = tf.shape(input_data)
+        # According to the original paper, reversing the input actually
+        # improves the model.
+        train_logits, inference_logits = seq2seq_model(
+            input_data=tf.reverse(input_data, [-1]),
+            target_data=targets,
+            keep_prob=keep_prob,
+            batch_size=batch_size,
+            sequence_length=sequence_length,
+            source_vocab_size=len(source_vocab_to_int),
+            target_vocab_size=len(target_vocab_to_int),
+            encoding_embedding_size=encoding_embedding_size,
+            decoding_embedding_size=decoding_embedding_size,
+            rnn_size=rnn_size,
+            num_layers=num_layers,
+            target_vocab_to_int=target_vocab_to_int)
 
-    train_logits, inference_logits = seq2seq_model(
-        tf.reverse(input_data, [-1]), targets, keep_prob, batch_size, sequence_length, len(
-            source_vocab_to_int), len(target_vocab_to_int),
-        encoding_embedding_size, decoding_embedding_size, rnn_size, num_layers, target_vocab_to_int)
+        tf.identity(inference_logits, 'logits')
+        with tf.name_scope("optimization"):
+            # Loss function
+            cost = tf.contrib.seq2seq.sequence_loss(
+                train_logits,
+                targets,
+                tf.ones([input_shape[0], sequence_length]))
 
-    tf.identity(inference_logits, 'logits')
-    with tf.name_scope("optimization"):
-        # Loss function
-        cost = tf.contrib.seq2seq.sequence_loss(
-            train_logits,
-            targets,
-            tf.ones([input_shape[0], sequence_length]))
+            # Optimizer
+            optimizer = tf.train.AdamOptimizer(lr)
 
-        # Optimizer
-        optimizer = tf.train.AdamOptimizer(lr)
+            # Gradient Clipping
+            gradients = optimizer.compute_gradients(cost)
+            capped_gradients = [(tf.clip_by_value(grad, -1., 1.), var)
+                                for grad, var in gradients if grad is not None]
+            train_op = optimizer.apply_gradients(capped_gradients)
 
-        # Gradient Clipping
-        gradients = optimizer.compute_gradients(cost)
-        capped_gradients = [(tf.clip_by_value(grad, -1., 1.), var)
-                            for grad, var in gradients if grad is not None]
-        train_op = optimizer.apply_gradients(capped_gradients)
+        # Train the model
+        with tf.Session(graph=train_graph) as sess:
+            sess.run(tf.global_variables_initializer())
 
+            for epoch_i in range(epochs):
+                for batch_i, (source_batch, target_batch) in enumerate(
+                        helper.batch_data(train_source, train_target, batch_size)):
+                    start_time = time.time()
 
-with tf.Session(graph=train_graph) as sess:
-    sess.run(tf.global_variables_initializer())
+                    _, loss = sess.run(
+                        [train_op, cost],
+                        {input_data: source_batch,
+                         targets: target_batch,
+                         lr: learning_rate,
+                         sequence_length: target_batch.shape[1],
+                         keep_prob: keep_probability})
 
-    for epoch_i in range(epochs):
-        for batch_i, (source_batch, target_batch) in enumerate(
-                helper.batch_data(train_source, train_target, batch_size)):
-            start_time = time.time()
+                    batch_train_logits = sess.run(
+                        inference_logits,
+                        {input_data: source_batch, keep_prob: 1.0})
+                    batch_valid_logits = sess.run(
+                        inference_logits,
+                        {input_data: valid_source, keep_prob: 1.0})
 
-            _, loss = sess.run(
-                [train_op, cost],
-                {input_data: source_batch,
-                 targets: target_batch,
-                 lr: learning_rate,
-                 sequence_length: target_batch.shape[1],
-                 keep_prob: keep_probability})
+                    train_acc = get_accuracy(target_batch, batch_train_logits)
+                    valid_acc = get_accuracy(
+                        np.array(valid_target), batch_valid_logits)
+                    end_time = time.time()
+                    print('Epoch {:>3} Batch {:>4}/{} - Train Accuracy: {:>6.3f}, Validation Accuracy: {:>6.3f}, Loss: {:>6.3f}'
+                          .format(epoch_i, batch_i,
+                                  len(source_int_text) // batch_size,
+                                  train_acc, valid_acc, loss))
 
-            batch_train_logits = sess.run(
-                inference_logits,
-                {input_data: source_batch, keep_prob: 1.0})
-            batch_valid_logits = sess.run(
-                inference_logits,
-                {input_data: valid_source, keep_prob: 1.0})
+            # Save Model
+            saver = tf.train.Saver()
+            saver.save(sess, save_path)
+            print('Model Trained and Saved')
 
-            train_acc = get_accuracy(target_batch, batch_train_logits)
-            valid_acc = get_accuracy(
-                np.array(valid_target), batch_valid_logits)
-            end_time = time.time()
-            print('Epoch {:>3} Batch {:>4}/{} - Train Accuracy: {:>6.3f}, Validation Accuracy: {:>6.3f}, Loss: {:>6.3f}'
-                  .format(epoch_i, batch_i, len(source_int_text) // batch_size, train_acc, valid_acc, loss))
-
-    # Save Model
-    saver = tf.train.Saver()
-    saver.save(sess, save_path)
-    print('Model Trained and Saved')
-
-# Save parameters for checkpoint
-helper.save_params(save_path)
-
-
-# Check point
-_, (source_vocab_to_int, target_vocab_to_int), (source_int_to_vocab,
-                                                target_int_to_vocab) = helper.load_preprocess()
-
-load_path = helper.load_params()
+        # Save parameters for checkpoint
+        helper.save_params(save_path)
 
 
 def sentence_to_seq(sentence, vocab_to_int):
@@ -476,32 +432,80 @@ def sentence_to_seq(sentence, vocab_to_int):
     return sentence_ind
 
 
+def translate(sentence):
+    (_,
+     (source_vocab_to_int, target_vocab_to_int),
+     (source_int_to_vocab, target_int_to_vocab)) = helper.load_preprocess()
+
+    load_path = helper.load_params()
+
+    translate_sentence_ind = sentence_to_seq(
+        translate_sentence, source_vocab_to_int)
+
+    loaded_graph = tf.Graph()
+    with tf.Session(graph=loaded_graph) as sess:
+        # Load saved model
+        loader = tf.train.import_meta_graph(load_path + '.meta')
+        loader.restore(sess, load_path)
+
+        input_data = loaded_graph.get_tensor_by_name('input:0')
+        logits = loaded_graph.get_tensor_by_name('logits:0')
+        keep_prob = loaded_graph.get_tensor_by_name('keep_prob:0')
+
+        translate_logits = sess.run(
+            logits, {input_data: [translate_sentence_ind], keep_prob: 1.0})[0]
+
+        print('Input')
+        print('  Word Ids:      {}'.format(
+            [i for i in translate_sentence_ind]))
+        print('  English Words: {}'.format(
+            [source_int_to_vocab[i] for i in translate_sentence_ind]))
+
+        print('\nPrediction')
+        print('  Word Ids:      {}'.format(
+            [i for i in np.argmax(translate_logits, 1)]))
+        print('  French Words: {}'.format(
+            [target_int_to_vocab[i] for i in np.argmax(translate_logits, 1)]))
+
+
+# Inspect data
+inspect_data(source_text, target_text, (0, 5))
+
+# Unit tests
+tests.test_text_to_ids(text_to_ids)
+tests.test_model_inputs(model_inputs)
+tests.test_process_decoding_input(process_decoding_input)
+tests.test_encoding_layer(encoding_layer)
+tests.test_decoding_layer_train(decoding_layer_train)
+tests.test_decoding_layer_infer(decoding_layer_infer)
+tests.test_decoding_layer(decoding_layer)
+tests.test_seq2seq_model(seq2seq_model)
 tests.test_sentence_to_seq(sentence_to_seq)
 
 
+# Preprocess all the data and save it
+helper.preprocess_and_save_data(source_path, target_path, text_to_ids)
+
+
+# Load the preprocessed data
+((source_int_text, target_int_text),
+ (source_vocab_to_int, target_vocab_to_int),
+ _) = helper.load_preprocess()
+
+
+# Train the model
+train_model(source_int_text,
+            target_int_text,
+            epochs=10,
+            batch_size=256,
+            rnn_size=256,
+            num_layers=3,
+            encoding_embedding_size=256,
+            decoding_embedding_size=256,
+            learning_rate=0.001,
+            keep_probability=0.5,
+            save_path='checkpoints/dev')
+
+# Translate
 translate_sentence = 'he saw a old yellow truck .'
-translate_sentence = sentence_to_seq(translate_sentence, source_vocab_to_int)
-
-loaded_graph = tf.Graph()
-with tf.Session(graph=loaded_graph) as sess:
-    # Load saved model
-    loader = tf.train.import_meta_graph(load_path + '.meta')
-    loader.restore(sess, load_path)
-
-    input_data = loaded_graph.get_tensor_by_name('input:0')
-    logits = loaded_graph.get_tensor_by_name('logits:0')
-    keep_prob = loaded_graph.get_tensor_by_name('keep_prob:0')
-
-    translate_logits = sess.run(
-        logits, {input_data: [translate_sentence], keep_prob: 1.0})[0]
-
-print('Input')
-print('  Word Ids:      {}'.format([i for i in translate_sentence]))
-print('  English Words: {}'.format(
-    [source_int_to_vocab[i] for i in translate_sentence]))
-
-print('\nPrediction')
-print('  Word Ids:      {}'.format(
-    [i for i in np.argmax(translate_logits, 1)]))
-print('  French Words: {}'.format(
-    [target_int_to_vocab[i] for i in np.argmax(translate_logits, 1)]))
+translate(translate_sentence)
