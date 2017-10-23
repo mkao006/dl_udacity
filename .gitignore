@@ -11,3 +11,5 @@ venv
 cifar-10-batches-py
 checkpoints
 data/
+MNIST_data/
+*.pkl
