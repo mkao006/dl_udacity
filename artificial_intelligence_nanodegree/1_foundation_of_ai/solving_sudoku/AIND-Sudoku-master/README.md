@@ -3,11 +3,11 @@
 
 # Question 1 (Naked Twins)
 Q: How do we use constraint propagation to solve the naked twins problem?  
-A: We eliminate possibilities from other cells, as the thw two values are only possible in the naked twin pairs.
+A: For any pair given in a group, if they have the same 2 possible values (e.g. 23 or 68), then the pair value must be assigned to the twins. If one of the value was assigned to a box not belonging to the twins, this reduces the possible value for the twins to 1 and eliminate the possibility to solve the puzzle.
 
 # Question 2 (Diagonal Sudoku)
 Q: How do we use constraint propagation to solve the diagonal sudoku problem?  
-A: The new diagnoal rule act as new constraints to help solve the problem.
+A: The purpose of constraint propagation is to eliminate options to reduce the number of possibility that we need to evaluate. By adding the addtional diagnoal constraints, we can identify where cases that will not yield a solution. Take the only choice method for example, if the value 1 has already appeared, then for all other box in the diagonal group, this value can be eliminated and reduce the number of path to be evaluated as it would otherwise violate the constraint.
 
 ### Install
 
