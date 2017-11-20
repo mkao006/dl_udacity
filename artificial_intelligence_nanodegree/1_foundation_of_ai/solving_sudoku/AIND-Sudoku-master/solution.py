@@ -1,3 +1,4 @@
+import time
 assignments = []
 rows = 'ABCDEFGHI'
 cols = '123456789'
@@ -7,6 +8,13 @@ def assign_value(values, box, value):
     """
     Please use this function to update your values dictionary!
     Assigns a value to a given box. If it updates the board record it.
+    Args:
+        values: a dictionary of the form {'box_name': '123456789', ...}
+        box: The key of the value dictionary where the value should go.
+        value: The value to be assigned
+
+    Returns:
+        the values dictionary with the naked twins eliminated from peers.
     """
 
     # Don't waste memory appending actions that don't actually change any
@@ -95,7 +103,6 @@ def eliminate(values):
             for e in elimination_box:
                 new_value = values[e].replace(elimination_value, '')
                 assign_value(values, e, new_value)
-                # values[e] = values[e].replace(elimination_value, '')
     return values
 
 
@@ -104,16 +111,17 @@ def only_choice(values):
 
     Go through all the units, and whenever there is a unit with a value
     that only fits in one box, assign the value to this box.
+    Args:
+        values(dict): a dictionary of the form {'box_name': '123456789', ...}
 
-    Input: Sudoku in dictionary form.
-    Output: Resulting Sudoku in dictionary form after filling in only choices.
+    Returns:
+        the values dictionary with the only choice assigned from peers.
     """
     for units in unitlist:
         for digit in '123456789':
             digit_location = [unit for unit in units if digit in values[unit]]
             if len(digit_location) == 1:
                 assign_value(values, digit_location[0], digit)
-                # values[digit_location[0]] = digit
     return values
 
 
@@ -159,6 +167,15 @@ def naked_twins(values):
 
 
 def reduce_puzzle(values):
+    ''' Reduce the puzzle using constrained propagation.
+
+    Args:
+        values(dict): a dictionary of the form {'box_name': '123456789', ...}
+
+    Returns:
+        the values dictionary with the specified strategies applied.
+
+    '''
     stalled = False
     while not stalled:
         # Check how many boxes have a determined value
@@ -189,7 +206,11 @@ def reduce_puzzle(values):
 def search(values):
     '''Using depth-first search and propagation, create a search tree and
     solve the sudoku.
+    Args:
+        values(dict): a dictionary of the form {'box_name': '123456789', ...}
 
+    Returns:
+        If the unique solution is reached, then the solution is returned. Otherwise, False.
     '''
     reduced_puzzle = reduce_puzzle(values)
 
@@ -218,12 +239,17 @@ def solve(grid):
     Returns:
         The dictionary representation of the final sudoku grid. False if no solution exists.
     """
-    return search(grid_values(grid))
+    start = time.time()
+    solution = search(grid_values(grid))
+    time_to_solve = time.time() - start
+    print('Time to solve: {:.3f} seconds'.format(time_to_solve))
+    return solution
 
 
 if __name__ == '__main__':
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
     display(solve(diag_sudoku_grid))
+
     try:
         from visualize import visualize_assignments
         visualize_assignments(assignments)
