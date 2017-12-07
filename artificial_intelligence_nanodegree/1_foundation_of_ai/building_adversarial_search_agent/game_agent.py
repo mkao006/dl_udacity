@@ -111,6 +111,26 @@ def custom_score_3(game, player):
     return float(own_moves - opp_moves) ** 2
 
 
+def isolation_terminal_state(self, game, depth):
+    """Determine whether the terminal state has been reached.
+
+    The terminal state is currently defined if there are no legal
+    moves possible. In addition, since we are performing iterative
+    deepening, if the move is equal to the max search depth, then
+    it is considered as a terminal state.
+
+    However, there are possiblity of earlier terminal state. For
+    example, at least in traditional isolation, the game can be
+    determined when a partition exist and the winner is the one
+    with the most number of legal moves.
+
+    """
+    if self.time_left() < self.TIMER_THRESHOLD:
+        raise SearchTimeout()
+
+    return (not bool(game.get_legal_moves()) or (depth == 0))
+
+
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
     constructed or tested directly.
@@ -192,25 +212,20 @@ class MinimaxPlayer(IsolationPlayer):
         # Return the best move from the last completed search iteration
         return best_move
 
-    def _terminal_state(self, game, depth):
-        """Determine whether the terminal state has been reached.
-
-        The terminal state is currently defined if there are no legal
-        moves possible. In addition, since we are performing iterative
-        deepening, if the move is equal to the max search depth, then
-        it is considered as a terminal state.
-
-        However, there are possiblity of earlier terminal state. For
-        example, at least in traditional isolation, the game can be
-        determined when a partition exist and the winner is the one
-        with the most number of legal moves.
+    def _max_value(self, game, depth):
+        """Returns the score if the terminal leaf has been reached, otherwise
+        recursively call the min function.
 
         """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
+        if isolation_terminal_state(self, game, depth):
+            return self.score(game, self)
 
-        return (not bool(game.get_legal_moves())
-                or (depth == 0))
+        v = max([max(float("-inf"),
+                     self._min_value(game.forecast_move(m), depth - 1))
+                 for m in game.get_legal_moves()])
+        return v
 
     def _min_value(self, game, depth):
         """Returns the score if the terminal leaf has been reached, otherwise
@@ -219,26 +234,12 @@ class MinimaxPlayer(IsolationPlayer):
         """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
-        if self._terminal_state(game, depth):
+
+        if isolation_terminal_state(self, game, depth):
             return self.score(game, self)
 
         v = min([min(float("inf"),
                      self._max_value(game.forecast_move(m), depth - 1))
-                 for m in game.get_legal_moves()])
-        return v
-
-    def _max_value(self, game, depth):
-        """Returns the score if the terminal leaf has been reached, otherwise
-        recursively call the min function.
-
-        """
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout()
-        if self._terminal_state(game, depth):
-            return self.score(game, self)
-
-        v = max([max(float("-inf"),
-                     self._min_value(game.forecast_move(m), depth - 1))
                  for m in game.get_legal_moves()])
         return v
 
@@ -291,12 +292,9 @@ class MinimaxPlayer(IsolationPlayer):
         if not legal_moves:
             return best_move
 
-        best_score = float("-inf")
-        for move in legal_moves:
-            score = self._min_value(game.forecast_move(move), depth - 1)
-            if score > best_score:
-                best_score = score
-                best_move = move
+        best_move = max(legal_moves,
+                        key=lambda x: self._min_value(game=game.forecast_move(x),
+                                                      depth=depth - 1))
 
         return best_move
 
@@ -339,8 +337,76 @@ class AlphaBetaPlayer(IsolationPlayer):
         """
         self.time_left = time_left
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        # Initialize the best move so that this function returns something
+        # in case the search fails due to timeout
+        best_move = (-1, -1)
+
+        # Initialise iterative deepening
+        time_remaining = True
+        ds = 1
+        while time_remaining:
+            try:
+                # The try/except block will automatically catch the exception
+                # raised when the timer is about to expire.
+                best_move = self.alphabeta(game=game, depth=ds)
+                ds += 1
+            except SearchTimeout:
+                time_remaining = False
+
+        # Return the best move from the last completed search iteration
+        return best_move
+
+    def _max_value_abpruning(self, game, depth, alpha, beta):
+        """Returns the score if the terminal leaf has been reached, otherwise
+        recursively call the min function.
+
+        AB pruning is also perfomed
+
+        """
+
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        if isolation_terminal_state(self, game, depth):
+            return self.score(game, self)
+
+        v = float("-inf")
+        for move in game.get_legal_moves():
+            v = max(v,
+                    self._min_value_abpruning(game=game.forecast_move(move),
+                                              depth=depth - 1,
+                                              alpha=alpha,
+                                              beta=beta))
+            if v >= beta:
+                return v
+            alpha = max(alpha, v)
+        return v
+
+    def _min_value_abpruning(self, game, depth, alpha, beta):
+        """Returns the score if the terminal leaf has been reached, otherwise
+        recursively call the max function.
+
+        AB pruning is also perfomed
+
+        """
+
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        if isolation_terminal_state(self, game, depth):
+            return self.score(game, self)
+
+        v = float("inf")
+        for move in game.get_legal_moves():
+            v = min(v,
+                    self._max_value_abpruning(game=game.forecast_move(move),
+                                              depth=depth - 1,
+                                              alpha=alpha,
+                                              beta=beta))
+            if v <= alpha:
+                return v
+            beta = min(beta, v)
+        return v
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -390,5 +456,24 @@ class AlphaBetaPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        # Then take the maximum value of all the branches
+        legal_moves = game.get_legal_moves()
+        best_move = (-1, -1)
+        if not legal_moves:
+            return best_move
+
+        score = float("-inf")
+        for move in legal_moves:
+            # Run minimax with alpha beta pruning
+            move_score = self._min_value_abpruning(
+                game=game.forecast_move(move), depth=depth - 1,
+                alpha=alpha, beta=beta)
+            # update the alpha for each branch
+            alpha = max(alpha, move_score)
+            # If the returned value is greater than the current max value, then
+            # update
+            if move_score > score:
+                score = move_score
+                best_move = move
+
+        return best_move
