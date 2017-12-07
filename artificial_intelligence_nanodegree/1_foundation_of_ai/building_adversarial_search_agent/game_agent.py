@@ -35,7 +35,13 @@ def custom_score(game, player):
         The heuristic value of the current game state to the specified player.
     """
     # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    return float(len(game.get_legal_moves()))
 
 
 def custom_score_2(game, player):
@@ -60,8 +66,15 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    # minimise the possible moves of the opponents
+    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
+    return -float(opp_moves)
 
 
 def custom_score_3(game, player):
@@ -86,8 +99,16 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    # Square difference of moves
+    own_moves = len(game.get_legal_moves(player))
+    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
+    return float(own_moves - opp_moves) ** 2
 
 
 class IsolationPlayer:
@@ -171,6 +192,56 @@ class MinimaxPlayer(IsolationPlayer):
         # Return the best move from the last completed search iteration
         return best_move
 
+    def _terminal_state(self, game, depth):
+        """Determine whether the terminal state has been reached.
+
+        The terminal state is currently defined if there are no legal
+        moves possible. In addition, since we are performing iterative
+        deepening, if the move is equal to the max search depth, then
+        it is considered as a terminal state.
+
+        However, there are possiblity of earlier terminal state. For
+        example, at least in traditional isolation, the game can be
+        determined when a partition exist and the winner is the one
+        with the most number of legal moves.
+
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        return (not bool(game.get_legal_moves())
+                or (depth == 0))
+
+    def _min_value(self, game, depth):
+        """Returns the score if the terminal leaf has been reached, otherwise
+        recursively call the max function.
+
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+        if self._terminal_state(game, depth):
+            return self.score(game, self)
+
+        v = min([min(float("inf"),
+                     self._max_value(game.forecast_move(m), depth - 1))
+                 for m in game.get_legal_moves()])
+        return v
+
+    def _max_value(self, game, depth):
+        """Returns the score if the terminal leaf has been reached, otherwise
+        recursively call the min function.
+
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+        if self._terminal_state(game, depth):
+            return self.score(game, self)
+
+        v = max([max(float("-inf"),
+                     self._min_value(game.forecast_move(m), depth - 1))
+                 for m in game.get_legal_moves()])
+        return v
+
     def minimax(self, game, depth):
         """Implement depth-limited minimax search algorithm as described in
         the lectures.
@@ -210,11 +281,24 @@ class MinimaxPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
+
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        # Then take the maximum value of all the branches
+        legal_moves = game.get_legal_moves()
+        best_move = (-1, -1)
+        if not legal_moves:
+            return best_move
+
+        best_score = float("-inf")
+        for move in legal_moves:
+            score = self._min_value(game.forecast_move(move), depth - 1)
+            if score > best_score:
+                best_score = score
+                best_move = move
+
+        return best_move
 
 
 class AlphaBetaPlayer(IsolationPlayer):
