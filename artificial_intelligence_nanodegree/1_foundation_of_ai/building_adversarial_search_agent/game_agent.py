@@ -3,6 +3,33 @@ test your agent's strength against a set of known agents using tournament.py
 and include the results in your report.
 """
 import random
+import math
+
+
+adjustment = 1.25
+
+
+def calc_legal_move_count(position):
+    movements = [(1, 2), (2, 1), (2, -1), (1, -2),
+                 (-1, -2), (-2, -1), (-2, 1), (-1, 2)]
+
+    legal_moves = len([dx for dx, dy in movements
+                       if position[0] + dx >= 0
+                       and position[0] + dx <= 7
+                       and position[1] + dy >= 0
+                       and position[1] + dy <= 7])
+    scaler = len(movements) * adjustment
+    return legal_moves / scaler
+
+
+def calc_manhattan_dist(position):
+    # NOTE (Michael): Hard code the center to reduce operation.
+    return 1 / (abs(position[0] - 3) + abs(position[1] - 3) + adjustment)
+
+
+def calc_euclidean_dist(position):
+    # NOTE (Michael): Hard code the center to reduce operation.
+    return 1 / ((position[0] - 3)**2 + (position[1] - 3)**2 + adjustment)
 
 
 class SearchTimeout(Exception):
@@ -41,7 +68,11 @@ def custom_score(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    return float(len(game.get_legal_moves()))
+    own_moves = game.get_legal_moves(player)
+    opp_moves = game.get_legal_moves(game.get_opponent(player))
+
+    return calc_euclidean_dist(game.get_player_location(player)) +  \
+        float(len(own_moves) - len(opp_moves))
 
 
 def custom_score_2(game, player):
@@ -72,9 +103,11 @@ def custom_score_2(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    # minimise the possible moves of the opponents
-    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
-    return -float(opp_moves)
+    own_moves = game.get_legal_moves(player)
+    opp_moves = game.get_legal_moves(game.get_opponent(player))
+
+    return calc_manhattan_dist(game.get_player_location(player)) + \
+        float(len(own_moves) - len(opp_moves))
 
 
 def custom_score_3(game, player):
@@ -105,10 +138,11 @@ def custom_score_3(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    # Square difference of moves
-    own_moves = len(game.get_legal_moves(player))
-    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
-    return float(own_moves - opp_moves) ** 2
+    own_moves = game.get_legal_moves(player)
+    opp_moves = game.get_legal_moves(game.get_opponent(player))
+
+    return calc_legal_move_count(game.get_player_location(player)) + \
+        float(len(own_moves) - len(opp_moves))
 
 
 def isolation_terminal_state(self, game, depth):
