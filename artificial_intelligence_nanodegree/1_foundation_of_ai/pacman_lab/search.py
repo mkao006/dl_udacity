@@ -136,8 +136,36 @@ def breadthFirstSearch(problem):
     Search the shallowest nodes in the search tree first.
     [2nd Edition: p 73, 3rd Edition: p 82]
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Initialisate state
+    initial_state = {'current_location': problem.getStartState(),
+                     'actions': [],
+                     'costs': 0}
+
+    # Initialise Frontier
+    frontier = util.Queue()
+    frontier.push(initial_state)
+    # Intialise Explored - (empty hashed dictionary)
+    explored = {}
+
+    # Start loop
+    while not frontier.isEmpty():
+        # pop a frontier to explored
+        current_state = frontier.pop()
+
+        # if the node is a solution, then break from loop
+        if problem.isGoalState(current_state['current_location']):
+            break
+
+        # add the location tuple to the explored
+        explored[hash(current_state['current_location'])] = True
+
+        # For each children of the node, create a new node with
+        # history and added to frontier.
+        for child in problem.getSuccessors(current_state['current_location']):
+            if hash(child[0]) not in explored:
+                frontier.push(transition_model(current_state, child))
+
+    return current_state['actions']
 
 
 def uniformCostSearch(problem):
