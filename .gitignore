@@ -13,3 +13,4 @@ checkpoints
 data/
 MNIST_data/
 *.pkl
+*.pyc
