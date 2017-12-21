@@ -111,7 +111,7 @@ class SearchAgent(Agent):
         state: a GameState object (pacman.py)
 
         """
-        if self.searchFunction == None:
+        if self.searchFunction is None:
             raise Exception, "No search function provided for SearchAgent"
         starttime = time.time()
         problem = self.searchType(state)  # Makes a new search problem
