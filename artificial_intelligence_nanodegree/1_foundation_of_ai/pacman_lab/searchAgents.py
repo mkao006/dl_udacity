@@ -304,22 +304,40 @@ class CornersProblem(search.SearchProblem):
             if not startingGameState.hasFood(*corner):
                 print 'Warning: no food in corner ' + str(corner)
                 self._expanded = 0  # Number of search nodes expanded
+            else:
+                self._expanded = 0
+
+        self.corners_visited = 0
+        self._visited, self._visitedlist, self._expanded = {}, [], 0
 
         "*** YOUR CODE HERE ***"
+        print(self.startingPosition)
 
     def getStartState(self):
-        """"Returns the start state(in your state space, not the full Pacman
-          state space)" "*** YOUR CODE HERE ***"
+        """Returns the start state(in your state space, not the full Pacman
+          state space)
 
         """
-        util.raiseNotDefined()
+        return self.startingPosition, self.corners
 
     def isGoalState(self, state):
-        """"Returns whether this search state is a goal state of the problem"
-          "*** YOUR CODE HERE ***"
-
+        """Returns whether this search state is a goal state of the problem
         """
-        util.raiseNotDefined()
+        if state in self.corners:
+            self.corners_visited += 1
+        isGoal = self.corners_visited == 4
+
+        # For display purposes only
+        if isGoal:
+            self._visitedlist.append(state)
+            import __main__
+            if '_display' in dir(__main__):
+                # @UndefinedVariable
+                if 'drawExpandedCells' in dir(__main__._display):
+                    __main__._display.drawExpandedCells(
+                        self._visitedlist)  # @UndefinedVariable
+
+        return isGoal
 
     def getSuccessors(self, state):
         """Returns successor states, the actions they require, and a cost of 1.
@@ -335,17 +353,27 @@ class CornersProblem(search.SearchProblem):
         """
 
         successors = []
-        for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-            # Add a successor state to the successor list if the action is legal
-            # Here's a code snippet for figuring out whether a new position hits a wall:
-            #   x,y = currentPosition
-            #   dx, dy = Actions.directionToVector(action)
-            #   nextx, nexty = int(x + dx), int(y + dy)
-            #   hitsWall = self.walls[nextx][nexty]
-
-            "*** YOUR CODE HERE ***"
-
+        for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST,
+                       Directions.WEST]:
+            current, corners = state
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(current[0] + dx), int(current[1] + dy)
+            hitsWall = self.walls[nextx][nexty]
+            if not hitsWall:
+                if current not in self.corners:
+                    nextState = ((nextx, nexty), self.corners)
+                else:
+                    nextState = ((nextx, nexty),
+                                 tuple([i for i in self.corners
+                                        if i != current]))
+                cost = 1
+                successors.append((nextState, action, cost))
+        print(successors)
         self._expanded += 1
+        if state not in self._visited:
+            self._visited[state] = True
+            self._visitedlist.append(state)
+
         return successors
 
     def getCostOfActions(self, actions):
@@ -396,12 +424,12 @@ class AStarCornersAgent(SearchAgent):
 
 class FoodSearchProblem:
     """
-    A search problem associated with finding the a path that collects all of the 
+    A search problem associated with finding the a path that collects all of the
     food (dots) in a Pacman game.
 
     A search state in this problem is a tuple ( pacmanPosition, foodGrid ) where
       pacmanPosition: a tuple (x,y) of integers specifying Pacman's position
-      foodGrid:       a Grid (see game.py) of either True or False, specifying remaining food 
+      foodGrid:       a Grid (see game.py) of either True or False, specifying remaining food
     """
 
     def __init__(self, startingGameState):
@@ -485,8 +513,10 @@ def foodHeuristic(state, problem):
 
     """
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"
-    return 0
+    dist_to_food = [abs(position[0] - px) + abs(position[1] - py)
+                    for px, py in foodGrid.asList()]
+    cost = sum(dist_to_food)
+    return cost
 
 
 class ClosestDotSearchAgent(SearchAgent):
@@ -572,7 +602,7 @@ class ApproximateSearchAgent(Agent):
         "*** YOUR CODE HERE ***"
 
     def getAction(self, state):
-        """From game.py: 
+        """From game.py:
 
             The Agent will receive a GameState and must return an
             action from Directions.{North, South, East, West, Stop}
