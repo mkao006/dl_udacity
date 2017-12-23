@@ -243,8 +243,10 @@ def aStarSearch(problem, heuristic=nullHeuristic):
         for child in problem.getSuccessors(current_state['current_location']):
             if hash(child[0]) not in explored:
                 new_state = transition_model(current_state, child)
-                frontier.push(new_state,
-                              heuristic(new_state['current_location'], problem))
+                g_cost = current_state['costs']
+                h_cost = heuristic(new_state['current_location'], problem)
+                f_cost = g_cost + h_cost
+                frontier.push(new_state, f_cost)
 
     return current_state['actions']
 
