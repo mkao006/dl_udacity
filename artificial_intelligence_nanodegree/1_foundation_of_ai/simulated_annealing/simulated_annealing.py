@@ -81,7 +81,7 @@ def simulated_annealing(problem, schedule):
             return problem
         successors = problem.successors()
         next_state = successors[random.randint(len(successors))]
-        new_problem = TravelingSalesmanProblem(next_state)
+        new_problem = TravelingSalesmanProblem(next_state.path)
         delta_e = new_problem.get_value() - problem.get_value()
         if delta_e > 0:
             problem = new_problem
@@ -166,7 +166,7 @@ class TravelingSalesmanProblem:
         for i in range(-n, 0):
             self.path[i], self.path[i + 1] = self.path[i + 1], self.path[i]
             successors.append(self.copy())
-            self.path[i], self.path[i + 1] = self.path[i + 1], self.path[i]
+            self.path[i + 1], self.path[i] = self.path[i], self.path[i + 1]
 
         return successors
 
@@ -230,7 +230,7 @@ temperature = 1e4
 
 
 def schedule(time):
-    raise NotImplementedError
+    return temperature * alpha**time
 
 
 # test the schedule() function -- no output means that the tests passed
