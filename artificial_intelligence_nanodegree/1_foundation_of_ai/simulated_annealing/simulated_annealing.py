@@ -74,7 +74,24 @@ def simulated_annealing(problem, schedule):
     AIMA simulated_annealing() pseudocode
         https://github.com/aimacode/aima-pseudocode/blob/master/md/Simulated-Annealing.md
     """
-    raise NotImplementedError
+    time = 0
+    while time < float('inf'):
+        Temp = schedule(time)
+        if Temp < 1e-10:
+            return problem
+        successors = problem.successors()
+        next_state = successors[random.randint(len(successors))]
+        new_problem = TravelingSalesmanProblem(next_state)
+        delta_e = new_problem.get_value() - problem.get_value()
+        if delta_e > 0:
+            problem = new_problem
+        else:
+            threshold = np.exp(delta_e / Temp)
+            if random.random(1) < threshold:
+                problem = new_problem
+        time += 1
+
+    return problem
 
 
 class TravelingSalesmanProblem:
@@ -147,9 +164,9 @@ class TravelingSalesmanProblem:
         successors = []
         n = len(self.path)
         for i in range(-n, 0):
-            new_path = self.path[:]
-            new_path[i], new_path[i + 1] = new_path[i + 1], new_path[i]
-            successors.append(self.copy(new_path))
+            self.path[i], self.path[i + 1] = self.path[i + 1], self.path[i]
+            successors.append(self.copy())
+            self.path[i], self.path[i + 1] = self.path[i + 1], self.path[i]
 
         return successors
 
@@ -174,20 +191,8 @@ class TravelingSalesmanProblem:
             (2) Remember to multiply the path length by -1 so that simulated
             annealing finds the shortest path
         """
-        # Get the coorinates
-        # city_coords = self.coords()
-        # # This is to include the path back to the starting point
-        # city_coords.append(city_coords[0])
-
-        # def dist(old, new):
-        #     return np.sqrt((new[0] - old[0])**2 + (new[1] - old[1])**2)
-
-        # path_distance = sum([dist(t, t_new)
-        #                      for t, t_new in zip(city_coords[:-1], city_coords[1:])])
-        # return path_distance * -1.0
-
         # Vectorise the implementation with numpy
-        city_coords = self.coords()
+        city_coords = list(self.coords)
         city_coords.append(city_coords[0])
 
         dx = np.diff([x for x, y in city_coords])
