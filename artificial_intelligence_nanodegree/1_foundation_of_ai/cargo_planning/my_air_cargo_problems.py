@@ -1,14 +1,12 @@
 from aimacode.logic import PropKB
 from aimacode.planning import Action
-from aimacode.search import (
-    Node, Problem,
-)
+from aimacode.search import Node
+from aimacode.search import Problem
 from aimacode.utils import expr
-from lp_utils import (
-    FluentState, encode_state, decode_state,
-)
+from lp_utils import FluentState
+from lp_utils import encode_state
+from lp_utils import decode_state
 from my_planning_graph import PlanningGraph
-
 from functools import lru_cache
 
 
@@ -272,8 +270,10 @@ def air_cargo_p3() -> AirCargoProblem:
            expr('In(C4, P2)'),
            expr('At(P1, JFK)'),
            expr('At(P1, ATL)'),
+           expr('At(P1, ORL)'),
            expr('At(P2, SFO)'),
-           expr('At(P2, ATL)')]
+           expr('At(P2, ATL)'),
+           expr('At(P2, ORL)')]
 
     init = FluentState(pos, neg)
 
