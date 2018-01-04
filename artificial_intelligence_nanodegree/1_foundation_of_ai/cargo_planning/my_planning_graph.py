@@ -475,20 +475,10 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
-
-        # TODO test for Competing Needs between nodes
-
-        # Slides to find more inforumation: University of Maryland https://www.cs.umd.edu/~nau/planning/slides/chapter06.pdf Page/slide: 9
-        # Competing needs: they have mutually exclusive preconditions
-
-        # getting parents of both NODES
-        parents_a1 = node_a1.parents
-        parents_a2 = node_a2.parents
-
-        # checking if some of parents are mutax, if yes we return True
-        for parent_a1 in parents_a1:
-            for parent_a2 in parents_a2:
-                if parent_a1.is_mutex(parent_a2):
+        for parent_a1 in node_a1.parents:
+            for parent_a2 in node_a2.parents:
+                if (parent_a1.is_mutex(parent_a2)
+                        or parent_a2.is_mutex(parent_a1)):
                     return True
 
         return False
