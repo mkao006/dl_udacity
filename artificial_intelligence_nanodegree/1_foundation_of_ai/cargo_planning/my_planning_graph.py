@@ -398,7 +398,7 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
-        #
+
         if not self.serial:
             return False
         if node_a1.is_persistent or node_a2.is_persistent:
@@ -421,36 +421,19 @@ class PlanningGraph():
         """
         # TODO test for Inconsistent Effects between nodes
 
-        # Inconsistent effects: an effect of one negates an effect of the other
-        # Slides to find more inforumation: University of Maryland
-        # https://www.cs.umd.edu/~nau/planning/slides/chapter06.pdf Page/slide:
-        # 9
-
-        # getting just an action from nodes
         action_a1 = node_a1.action
         action_a2 = node_a2.action
 
-        # to check if there is Inconsistent_effects at those nodes
-        # we get actions adding and removing effects
-        add_a1 = action_a1.effect_add
-        rem_a1 = action_a1.effect_rem
+        # Find the intersection of the two sets of actions.
+        a1_add_a2_rem = set(action_a1.effect_add).intersection(
+            action_a2.effect_rem)
+        a2_add_a1_rem = set(action_a2.effect_add).intersection(
+            action_a1.effect_rem)
 
-        add_a2 = action_a2.effect_add
-        rem_a2 = action_a2.effect_rem
-
-        # Going through adding states from first action
-        for add_ in add_a1:
-            # if that adding state is in remove states from second action,
-            # those 2 actions are mutax
-            if add_ in rem_a2:
-                return True
-
-        # Going through adding states from second action
-        for add_ in add_a2:
-            # if that adding state is in remove states from first action, those
-            # 2 actions are mutax
-            if add_ in rem_a1:
-                return True
+        # If there are intersection between the add and remove action,
+        # then they are inconsisten.
+        if len(a1_add_a2_rem) > 0 or len(a2_add_a1_rem) > 0:
+            return True
 
         return False
 
