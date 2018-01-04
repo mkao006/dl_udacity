@@ -475,6 +475,7 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
+
         for parent_a1 in node_a1.parents:
             for parent_a2 in node_a2.parents:
                 if (parent_a1.is_mutex(parent_a2)
@@ -515,21 +516,8 @@ class PlanningGraph():
         :param node_s2: PgNode_s
         :return: bool
         """
-        # TODO test for negation between nodes
 
-        # Slides to find more inforumation: University of Maryland https://www.cs.umd.edu/~nau/planning/slides/chapter06.pdf Page/slide: 9
-        # If both nodes have same sybol but one is negative and another is
-        # positive, they are negation of one another
-
-        # this method is created similary to __eq__ function in PhNode_s
-        # it takes two nodes and returns true if both of ndoes have same symbol
-        # both different polarity (positive, negative)
-        def negation(node_1, node_2):
-            # Templete used from __eq__ function from PhNode_s class above
-            return(node_1.is_pos != node_2.is_pos and node_1.symbol == node_2.symbol)
-
-        # Return result of negation function -> True or False
-        return negation(node_s1, node_s2)
+        return (node_s1.is_pos != node_s2.is_pos) and (node_s1.symbol == node_s2.symbol)
 
     def inconsistent_support_mutex(self, node_s1: PgNode_s, node_s2: PgNode_s):
         """
