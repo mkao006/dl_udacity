@@ -306,8 +306,8 @@ class PlanningGraph():
 
         self.a_levels.append(set())
         # 1. determine what actions to add and create those PgNode_a objects
+        literals = self.s_levels[level]
         for action in self.all_actions:
-            literals = self.s_levels[level]
             action_node = PgNode_a(action)
             # Skip the action node if it is not a subset
             if not action_node.prenodes.issubset(literals):
