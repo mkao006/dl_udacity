@@ -555,45 +555,13 @@ class PlanningGraph():
 
         """
         level_sum = 0
-        # TODO implement
 
-        # for each goal in the problem, determine the level cost, then add them
-        # together
-
-        goals = self.problem.goal
-        num_of_layers = len(self.s_levels)
-
-        # define gola_checked list which is important so we don't
-        # check same goal on different levels We will get result for
-        # lowest level which have goal inside
-        goal_checked = []
-
-        # iterating for each level
-        for layer_index in range(num_of_layers):
-            # getting nodes/states inside current looked level
-            current_level_states = self.s_levels[layer_index]
-            # boolean checker to break from loop if we find goal
-            goal_check = False
-            # going through all nodes in current level
-            for node in current_level_states:
-
-                # checking for each goal that we have in our problem
-                # is it inside of current level
-                for goal in goals:
-                    # if current node is a goal
-                    if node.symbol == goal:
-                        # But we should not have goal inside goals that we have
-                        # already checked
-                        if goal not in goal_checked:
-                            # adding it to checked goals
-                            goal_checked.append(goal)
-                            goal_check = True
-                            # increasing lelve_sum by index of a current
-                            # level/layer
-                            level_sum += layer_index
-                            break
-
-                if goal_check:
+        for goal in self.problem.goal:
+            for level, s_level_nodes in enumerate(self.s_levels):
+                goal_check = [(s_node.symbol, s_node.is_pos)
+                              for s_node in s_level_nodes]
+                if (goal, True) in goal_check:
+                    level_sum += level
                     break
 
         return level_sum
