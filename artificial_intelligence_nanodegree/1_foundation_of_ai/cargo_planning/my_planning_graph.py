@@ -535,35 +535,17 @@ class PlanningGraph():
         :param node_s2: PgNode_s
         :return: bool
         """
+
         # TODO test for Inconsistent Support between nodes
-
-        # https://www.cs.umd.edu/~nau/planning/slides/chapter06.pdf
-        # The intuition behind incosistent_support is -  We have some state nodes in s layer/level
-        # after performing those we have some actions in a action layer. If those actions are mutax (negate on another)
-        # Those nodes in state layers are mutax as well.
-
-        # getting parents of both nodes
         parents_a1 = node_s1.parents
         parents_a2 = node_s2.parents
 
-        # counter of mutax pairs set to 0
-        counter_of_mutex = 0
-
-        # For each parent from a first node we are checking all nodes in parent
-        # states from second node
-        for parent_a1 in parents_a1:
-            for parent_a2 in parents_a2:
-                if parent_a1.is_mutex(parent_a2):
-                    # if those two parents are mutax we are adding +1 to our
-                    # counter
-                    counter_of_mutex += 1
-
-        # if counter_of_mutax is the same of parents for first node those two
-        # node are incosistent
-        if counter_of_mutex == len(parents_a1):
-            return True
-
-        return False
+        mutex_counter = len([parent_a1
+                             for parent_a1 in parents_a1
+                             for parent_a2 in parents_a2
+                             if parent_a1.is_mutex(parent_a2)])
+        inconsistent_support = mutex_counter == len(parents_a1)
+        return inconsistent_support
 
     def h_levelsum(self) -> int:
         """The sum of the level costs of the individual goals (admissible if
