@@ -363,10 +363,6 @@ class PlanningGraph():
                 action_node.children.add(effect_node)
                 effect_node.parents.add(action_node)
 
-        for action_node in self.a_levels[level - 1]:
-            for state_node in action_node.effnodes:
-                state_node.parents.add(action_node)
-
     def update_a_mutex(self, nodeset):
         """ Determine and update sibling mutual exclusion for A-level nodes
 
