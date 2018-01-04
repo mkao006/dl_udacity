@@ -451,31 +451,17 @@ class PlanningGraph():
         :param node_a2: PgNode_a
         :return: bool
         """
-        # Slides to find more inforumation: University of Maryland https://www.cs.umd.edu/~nau/planning/slides/chapter06.pdf Page/slide: 9
-        # Interference: one deletes a precondition of the other
 
-        # to check if there is Interference at those nodes
-        # we get actions adding and removing effects
         action_a1 = node_a1.action
         action_a2 = node_a2.action
 
-        # getting removing effect from both actions
-        rem_a1 = action_a1.effect_rem
-        rem_a2 = action_a2.effect_rem
+        a1_rem_a2_poscond = set(action_a1.effect_rem).intersection(
+            action_a2.precond_pos)
+        a2_rem_a1_poscond = set(action_a2.effect_rem).intersection(
+            action_a1.precond_pos)
 
-        # getting positive preconditions for botha ctions
-        pre_a1 = action_a1.precond_pos
-        pre_a2 = action_a2.precond_pos
-
-        # checking if removing state of action is inside of positive preconditins (deletes it)]
-        # if yes they are mutax
-        for rem_ in rem_a1:
-            if rem_ in pre_a2:
-                return True
-
-        for rem_ in rem_a2:
-            if rem_ in pre_a1:
-                return True
+        if len(a1_rem_a2_poscond) > 0 or len(a2_rem_a1_poscond) > 0:
+            return True
 
         return False
 
