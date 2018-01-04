@@ -304,66 +304,30 @@ class PlanningGraph():
             adds A nodes to the current level in self.a_levels[level]
         """
 
-        action_level = []
-        # This for loop will list through all actions that can be performed -
-        # incloding noop actions.
+        self.a_levels.append(set())
+        # 1. determine what actions to add and create those PgNode_a objects
         for action in self.all_actions:
-
-            # We are getting the list of literals in the looked level
             literals = self.s_levels[level]
             action_node = PgNode_a(action)
-            precond_for_node = action_node.prenodes
-            # now to check if all precond for actions are in literals
-            # We can check with simple for loop or with function issubset and
-            # convert both lists to sets
-            if precond_for_node.issubset(literals):
+            # Skip the action node if it is not a subset
+            if not action_node.prenodes.issubset(literals):
+                next
+            # 2. connect the nodes to the previous S literal level
 
-                action_level.append(action_node)
-
-                # Now its time to connect those nodes
+            # for example, the A0 level will iterate through all possible
+            # actions for the problem and add a PgNode_a to a_levels[0]
+            #
+            #   set iff all prerequisite literals for the action hold in
+            #   S0.  This can be accomplished by testing to see if a
+            #   proposed PgNode_a has prenodes that are a subset of the
+            #   previous S level.  Once an action node is added, it MUST
+            #   be connected to the S node instances in the appropriate
+            #   s_level set.
+            for pre_condition in action_node.prenodes:
                 for literal in literals:
-
-                    # So here we are adding to current nodes parents to be all
-                    # literals in literal layer
-                    action_node.parents.add(literal)
-                    # and for every literal we are adding new child, which is
-                    # current node
-                    literal.children.add(action_node)
-                    # by doing these two operations we are making layers in our
-                    # planning graph (something like neural network structure)
-
-        self.a_levels.append(action_level)
-
-        # action_set = list()
-        # # self.a_levels.append(set())
-        # # literals = self.s_levels[level]
-        # # 1. determine what actions to add and create those PgNode_a objects
-        # for action in self.all_actions:
-        #     literals = self.s_levels[level]
-        #     action_node = PgNode_a(action)
-        #     # Skip the action node if it is not a subset
-        #     if not action_node.prenodes.issubset(literals):
-        #         next
-
-        #     # 2. connect the nodes to the previous S literal level
-
-        #     # for example, the A0 level will iterate through all possible
-        #     # actions for the problem and add a PgNode_a to a_levels[0]
-        #     #
-        #     #   set iff all prerequisite literals for the action hold in
-        #     #   S0.  This can be accomplished by testing to see if a
-        #     #   proposed PgNode_a has prenodes that are a subset of the
-        #     #   previous S level.  Once an action node is added, it MUST
-        #     #   be connected to the S node instances in the appropriate
-        #     #   s_level set.
-        #     action_set.append(action_node)
-        #     # for pre_condition in action_node.prenodes:
-        #     for literal in literals:
-        #         # if literal == pre_condition:
-        #         action_node.parents.add(literal)
-        #         literal.children.add(action_node)
-        #     # self.a_levels[level].add(action_node)
-        # self.a_levels.append(action_set)
+                    if literal == pre_condition:
+                        action_node.parents.add(literal)
+                        self.a_levels[level].add(action_node)
 
     def add_literal_level(self, level):
         """ add an S (literal) level to the Planning Graph
