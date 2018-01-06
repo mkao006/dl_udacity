@@ -20,3 +20,4 @@ Reference:
 1. [Nils J. Nilsson (1984). SHAKEY THE ROBOT Technical Note 323](http://www.cs.uml.edu/~holly/91.549/readings/629.pdf)
 2. [Richard E. Fikes, Nils J. Nilsson (1971). STRIPS: A New Approach to the Application of Theorem Proving to Problem Solving](http://ai.stanford.edu/~nilsson/OnlinePubs-Nils/PublishedPapers/strips.pdf)
 3. [Peter E. Hart, Nils J. Nilsson, Bertram Raphael (1968). A Formal Basis for the Heuristic Determination of Minimum Cost Path](http://ai.stanford.edu/~nilsson/OnlinePubs-Nils/PublishedPapers/astar.pdf)
+4. [Stuart Russel, Peter Norvig (2010). Artificial Intelligence: A Modern Approach - Third Edition](http://web.cecs.pdx.edu/~mperkows/CLASS_479/2017_ZZ_00/02__GOOD_Russel=Norvig=Artificial%20Intelligence%20A%20Modern%20Approach%20(3rd%20Edition).pdf)
