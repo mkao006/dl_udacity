@@ -39,12 +39,29 @@ class ModelSelector(object):
             hmm_model = GaussianHMM(n_components=num_states, covariance_type="diag", n_iter=1000,
                                     random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
             if self.verbose:
-                print("model created for {} with {} states".format(self.this_word, num_states))
+                print("model created for {} with {} states".format(
+                    self.this_word, num_states))
             return hmm_model
         except:
             if self.verbose:
-                print("failure on {} with {} states".format(self.this_word, num_states))
+                print("failure on {} with {} states".format(
+                    self.this_word, num_states))
             return None
+
+    def compute_ll(self, c):
+        ''' This method to compute log-likelihood handles failure.
+        '''
+        try:
+            ll = self.base_model(c).score(self.X, self.lengths)
+        except:
+            ll = -1e5
+        return ll
+
+
+class SelectorDummy(ModelSelector):
+
+    def select(self):
+        return self.base_model
 
 
 class SelectorConstant(ModelSelector):
@@ -76,8 +93,16 @@ class SelectorBIC(ModelSelector):
         """
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection based on BIC scores
-        raise NotImplementedError
+        def bic(component):
+            # TODO (Michael): Double check the formula
+            p = (component ** 2) + (2 * component * sum(self.lengths)) - 1
+            return -2 * self.compute_ll(component) + component * np.log(self.lengths)
+
+        components = list(range(self.min_n_components,
+                                self.max_n_components + 1))
+        best_num_components = max(components, key=bic)
+
+        return self.base_model(best_num_components)
 
 
 class SelectorDIC(ModelSelector):
@@ -93,8 +118,14 @@ class SelectorDIC(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection based on DIC scores
-        raise NotImplementedError
+        # TODO (Michael): Double check the implementation
+        components = list(range(self.min_n_components,
+                                self.max_n_components + 1))
+
+        ll = [self.compute_ll(c) for c in components]
+        dic = np.matmul(np.array(ll), np.eye(len(ll)) * 2 - 1)
+        best_num_components = np.argmax(dic)
+        return self.base_model(best_num_components)
 
 
 class SelectorCV(ModelSelector):
