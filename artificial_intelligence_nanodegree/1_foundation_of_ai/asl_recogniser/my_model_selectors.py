@@ -94,13 +94,17 @@ class SelectorBIC(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         def bic(component):
-            # TODO (Michael): Double check the formula
-            p = (component ** 2) + (2 * component * sum(self.lengths)) - 1
-            return -2 * self.compute_ll(component) + component * np.log(self.lengths)
+            logL = self.compute_ll(component)
+            logN = np.log(self.X.shape[0])
+            n_features = self.X.shape[1]
+            n_params = component * \
+                (component - 1) + 2 * n_features * component
+            bic = -2 * logL + n_params * logN
+            return bic
 
         components = list(range(self.min_n_components,
                                 self.max_n_components + 1))
-        best_num_components = max(components, key=bic)
+        best_num_components = min(components, key=bic)
 
         return self.base_model(best_num_components)
 
@@ -124,7 +128,7 @@ class SelectorDIC(ModelSelector):
 
         ll = [self.compute_ll(c) for c in components]
         dic = np.matmul(np.array(ll), np.eye(len(ll)) * 2 - 1)
-        best_num_components = np.argmax(dic)
+        best_num_components = components[np.argmax(dic)]
         return self.base_model(best_num_components)
 
 
@@ -136,5 +140,55 @@ class SelectorCV(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection using CV
-        raise NotImplementedError
+        components = list(range(self.min_n_components,
+                                self.max_n_components + 1))
+        n_splits = 3
+        penalisation = -1e5
+
+        # The default of the LL is negative infinite.
+        component_ll = [float('-inf')] * len(components)
+
+        for component_idx, c in enumerate(components):
+            if(len(self.sequences) < n_splits):
+                break
+
+            # Split the data with KFold
+            split_method = KFold(
+                random_state=self.random_state, n_splits=n_splits)
+            # Instead of -Inf, we use -1e5 to penalise incase all component has
+            # at least a single failure.
+            cv_ll = [penalisation] * n_splits
+            for split_idx, (cv_train_idx, cv_test_idx) in enumerate(split_method.split(self.sequences)):
+                train_x, train_length = combine_sequences(
+                    cv_train_idx, self.sequences)
+                test_x, test_length = combine_sequences(
+                    cv_test_idx, self.sequences)
+
+                # Train the model on the training set
+                #
+                # NOTE (Michael): If the training is successful, we
+                #                 can then calculate the likelihood on
+                #                 the test set. However, if the
+                #                 training fails, we will use the
+                #                 default penalisation value.
+                try:
+                    hmm_model = GaussianHMM(n_components=c,
+                                            covariance_type="diag",
+                                            n_iter=1000,
+                                            random_state=self.random_state,
+                                            verbose=False).fit(train_x, train_length)
+
+                    # compute the likelihood on the test sets and
+                    # append to the cv set
+                    cv_ll[split_idx] = hmm_model.score(test_x, test_length)
+                except:
+                    pass
+
+            # take the average of the likelihood for the current component
+            component_ll[component_idx] = np.average(cv_ll)
+
+        if any([np.isfinite(c) for c in component_ll]):
+            best_num_components = components[np.argmax(component_ll)]
+        else:
+            best_num_components = self.n_constant
+        return self.base_model(best_num_components)
