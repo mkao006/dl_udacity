@@ -36,8 +36,11 @@ class ModelSelector(object):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         # warnings.filterwarnings("ignore", category=RuntimeWarning)
         try:
-            hmm_model = GaussianHMM(n_components=num_states, covariance_type="diag", n_iter=1000,
-                                    random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
+            hmm_model = GaussianHMM(n_components=num_states,
+                                    covariance_type="diag",
+                                    n_iter=1000,
+                                    random_state=self.random_state,
+                                    verbose=False).fit(self.X, self.lengths)
             if self.verbose:
                 print("model created for {} with {} states".format(
                     self.this_word, num_states))
@@ -56,12 +59,6 @@ class ModelSelector(object):
         except:
             ll = -1e5
         return ll
-
-
-class SelectorDummy(ModelSelector):
-
-    def select(self):
-        return self.base_model
 
 
 class SelectorConstant(ModelSelector):
@@ -97,8 +94,8 @@ class SelectorBIC(ModelSelector):
             logL = self.compute_ll(component)
             logN = np.log(self.X.shape[0])
             n_features = self.X.shape[1]
-            n_params = component * \
-                (component - 1) + 2 * n_features * component
+            n_params = (component * (component - 1) +
+                        2 * n_features * component)
             bic = -2 * logL + n_params * logN
             return bic
 
@@ -122,7 +119,6 @@ class SelectorDIC(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO (Michael): Double check the implementation
         components = list(range(self.min_n_components,
                                 self.max_n_components + 1))
 
