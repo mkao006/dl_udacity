@@ -1,10 +1,15 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import warnings
+import datetime
+import time
+import matplotlib.pyplot as plt
 from asl_data import SinglesData
+from my_recognizer import recognize
 
 
 def plot_location(location_list, legend=['left hand', 'right hand', 'nose'],
-                  cmap=plt.get_cmap('tab20')):
+                  title='', cmap=plt.get_cmap('tab20')):
     ''' Scatter plot of list of points with mean add.
     '''
     n = len(location_list)
@@ -24,6 +29,7 @@ def plot_location(location_list, legend=['left hand', 'right hand', 'nose'],
     plt.ylabel('')
     plt.gca().invert_yaxis()
     plt.legend(handler, legend[:n])
+    plt.title(title)
     # plt.show()
 
 
@@ -45,18 +51,6 @@ def filled_diff(x):
     ''' Take the difference of a series then replace missing values with zero.
     '''
     return x.diff().fillna(0)
-
-
-# def build_feature_pair(feature_name_x, feature_name_y):
-#     training_feature = asl.build_training([feature_name_x, feature_name_y])
-
-#     return {'x': x, 'y': y}
-
-
-# def visualise_feature_pair(feature_pair):
-#     N = len(sequences)
-#     # Specify color map based on N
-#     for seq in sequences:
 
 
 def show_errors_summary(guesses: list, test_set: SinglesData):
@@ -90,6 +84,61 @@ def train_all_words(data, features, model_selector):
     model_dict = {}
     for word in data.words:
         model = model_selector(sequences, Xlengths, word,
-                               n_constant=3).select()
+                               n_constant=3, random_state=np.random.randint(1000)).select()
         model_dict[word] = model
     return model_dict
+
+
+def calculate_wer(guesses: list, test_set: SinglesData):
+    """ Print WER and sentence differences in tabular form
+
+    :param guesses: list of test item answers, ordered
+    :param test_set: SinglesData object
+    :return:
+        nothing returned, prints error report
+
+    WER = (S+I+D)/N  but we have no insertions or deletions for isolated words so WER = S/N
+    """
+    S = 0
+    N = len(test_set.wordlist)
+    num_test_words = len(test_set.wordlist)
+    if len(guesses) != num_test_words:
+        print("Size of guesses must equal number of test words ({})!".format(
+            num_test_words))
+    for word_id in range(num_test_words):
+        if guesses[word_id] != test_set.wordlist[word_id]:
+            S += 1
+
+    return float(S) / float(N)
+
+
+def train_models(asl,
+                 features: dict,
+                 model_selectors: list,
+                 n_sample=10):
+
+    results = list()
+    start = time.time()
+    for feature_name, features in features.items():
+        for model_selector in model_selectors:
+            info = 'currently training with "{}" features, and "{}" selector'
+            print(info.format(feature_name, model_selector.__name__))
+            training = asl.build_training(features)
+            test_set = asl.build_test(features)
+
+            for _ in range(n_sample):
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    models = train_all_words(
+                        training, features, model_selector)
+
+                    probabilities, guesses = recognize(models, test_set)
+                    current_wer = calculate_wer(guesses, test_set)
+
+                    results.append({'model_selector': model_selector.__name__,
+                                    'feature_name': feature_name,
+                                    'wer': current_wer})
+    end = time.time()
+    print('Total Time spend: {}'.format(
+        str(datetime.timedelta(seconds=end - start))))
+    return pd.DataFrame(results)
