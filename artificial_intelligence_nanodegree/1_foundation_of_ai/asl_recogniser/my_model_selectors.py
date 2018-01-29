@@ -7,6 +7,8 @@ from hmmlearn.hmm import GaussianHMM
 from sklearn.model_selection import KFold
 from asl_utils import combine_sequences
 
+np.warnings.filterwarnings('ignore')
+
 
 class ModelSelector(object):
     '''
@@ -57,7 +59,7 @@ class ModelSelector(object):
         try:
             ll = self.base_model(c).score(self.X, self.lengths)
         except:
-            ll = -1e5
+            ll = None
         return ll
 
 
@@ -92,12 +94,15 @@ class SelectorBIC(ModelSelector):
 
         def bic(component):
             logL = self.compute_ll(component)
-            logN = np.log(self.X.shape[0])
-            n_features = self.X.shape[1]
-            n_params = (component * (component - 1) +
-                        2 * n_features * component)
-            bic = -2 * logL + n_params * logN
-            return bic
+            if logL is not None:
+                logN = np.log(self.X.shape[0])
+                n_features = self.X.shape[1]
+                n_params = (component * (component - 1) +
+                            2 * n_features * component)
+                BIC = -2 * logL + n_params * logN
+            else:
+                BIC = float('inf')
+            return BIC
 
         components = list(range(self.min_n_components,
                                 self.max_n_components + 1))
@@ -119,12 +124,25 @@ class SelectorDIC(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+        def dic(component):
+            ll = self.compute_ll(component)
+            if ll is not None:
+                penalty = np.mean([self.compute_ll(self.hwords[word])
+                                   for word in self.words
+                                   if word != self.this_word
+                                   and self.compute_ll(self.hwords[word]) is not None])
+                if np.isnan(penalty):
+                    DIC = float('inf')
+                else:
+                    DIC = ll - penalty
+            else:
+                DIC = float('inf')
+            return DIC
+
         components = list(range(self.min_n_components,
                                 self.max_n_components + 1))
+        best_num_components = max(components, key=dic)
 
-        ll = [self.compute_ll(c) for c in components]
-        dic = np.matmul(np.array(ll), np.eye(len(ll)) * 2 - 1)
-        best_num_components = components[np.argmax(dic)]
         return self.base_model(best_num_components)
 
 
