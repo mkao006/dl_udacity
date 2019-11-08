@@ -45,7 +45,7 @@ mistune==0.7.4
 nbconvert==5.1.1
 nbformat==4.3.0
 netifaces==0.10.4
-notebook==5.0.0
+notebook==5.7.8
 numpy==1.11.0
 oauth2client==4.0.0
 pandocfilters==1.4.1
