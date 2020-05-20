@@ -22,7 +22,7 @@ folder-color-common==0.0.79
 functools32==3.2.3.post2
 google-api-python-client==1.6.2
 html5lib==0.999999999
-httplib2==0.10.3
+httplib2==0.18.0
 idna==2.5
 importmagic==0.1.7
 ipykernel==4.6.1
