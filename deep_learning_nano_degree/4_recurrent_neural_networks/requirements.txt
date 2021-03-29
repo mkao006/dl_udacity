@@ -63,7 +63,7 @@ pycparser==2.14
 pycrypto==2.6.1
 pycurl==7.43.0
 pyflakes==1.5.0
-Pygments==2.2.0
+Pygments==2.7.4
 pygobject==3.20.0
 pygpgme==0.3
 PyMySQL==0.7.2
